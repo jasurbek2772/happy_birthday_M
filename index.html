@@ -42,7 +42,8 @@ button{margin-top:16px;padding:13px 32px;font-size:16px;border:0;border-radius:9
 .gs{opacity:0;animation:fadein 1.2s ease forwards}
 @keyframes fadein{to{opacity:.16}}
 .letter p{font-size:17px;line-height:1.75;opacity:0;animation:rise .9s ease forwards}
-.sign{text-align:right;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:26px;color:var(--accent)}
+.letter .sign{text-align:right;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:26px;color:var(--accent)}
+.letter .lock{text-align:center;color:var(--muted);font-style:italic;font-size:15px;padding:14px;border:1px dashed var(--line);border-radius:14px}
 .heart{position:fixed;bottom:-30px;pointer-events:none;animation:float linear forwards}
 @keyframes float{to{transform:translateY(-110vh) rotate(20deg);opacity:0}}
 .hidden{display:none}
@@ -71,7 +72,6 @@ button{margin-top:16px;padding:13px 32px;font-size:16px;border:0;border-radius:9
     <div id="tree" aria-hidden="true"></div>
     <h1 id="title"></h1>
     <div id="text"></div>
-    <p class="sign" id="sign"></p>
   </section>
 </main>
 
@@ -86,10 +86,13 @@ var PARAGRAPHS = [
   'Третий абзац.'
 ];
 var SIGNATURE = 'Твой фанат Жасур';
+var LATE_FROM = 2;                                      // с какого абзаца (0 = первый) текст открывается позже
+var LATE_AT = Date.parse('2026-12-08T16:00:00+07:00');  // вечерняя часть, Красноярск
 // ======================
 
 var $ = function(id){return document.getElementById(id)};
-var preview = location.hash === '#test'; // для проверки: открой страницу с #test (уведомления не шлются)
+var preview = location.hash === '#test' || location.hash === '#test-open'; // для проверки (уведомления не шлются)
+var forceLate = location.hash === '#test-open'; // #test-open: вечерняя часть открыта сразу
 var attempts = 0;
 
 // Уведомление тебе в VK через /api/send (ошибки молча игнорируем)
@@ -180,17 +183,36 @@ function buildTree(){
 }
 buildTree();
 
+function addP(t, delay, cls){
+  var p = document.createElement('p'); p.textContent = t;
+  if(cls) p.className = cls;
+  p.style.animationDelay = delay+'s';
+  $('text').appendChild(p); return p;
+}
+var lateTimer = null;
+function lateOpen(){ return forceLate || Date.now() >= LATE_AT; }
+function showLate(live){
+  var lk = $('lock'); if(lk) lk.remove();
+  var d = live ? 0.3 : T0+0.4+LATE_FROM*0.9, n = 0;
+  PARAGRAPHS.slice(LATE_FROM).forEach(function(t,j){ addP(t, d+j*0.9); n++; });
+  addP(SIGNATURE, d+n*0.9, 'sign');
+  if(live) notify('late');
+}
+function renderLetter(){
+  clearInterval(lateTimer); $('text').innerHTML = '';
+  var d0 = T0+0.4;
+  PARAGRAPHS.slice(0,LATE_FROM).forEach(function(t,i){ addP(t, d0+i*0.9); });
+  if(lateOpen()){ showLate(false); return }
+  var lk = addP('🔒 Продолжение откроется сегодня в 16:00', d0+LATE_FROM*0.9, 'lock'); lk.id = 'lock';
+  lateTimer = setInterval(function(){ if(lateOpen()){ clearInterval(lateTimer); showLate(true) } },1000);
+}
+
 function check(){
   var v = $('pin').value;
   if(v.length<4){return}
   if(v===PIN){
     $('title').textContent = TITLE;
-    $('text').innerHTML = PARAGRAPHS.map(function(t,i){
-      var p = document.createElement('p'); p.textContent = t;
-      p.style.animationDelay = (T0+0.4+i*0.9)+'s'; return p.outerHTML;
-    }).join('');
-    $('sign').textContent = SIGNATURE;
-    $('sign').style.animationDelay = (T0+0.4+PARAGRAPHS.length*0.9)+'s';
+    renderLetter();
     $('title').style.animationDelay = (T0-0.6)+'s';
     show('letter'); window.scrollTo(0,0);
     setTimeout(hearts, (T0+0.6)*1000);
