@@ -117,7 +117,7 @@ var iv = setInterval(tick,1000); tick();
 notify('visit', visitPhase);
 
 function hearts(){
-  for(var i=0;i<24;i++){
+  for(var i=0;i<50;i++){
     var h = document.createElement('div');
     h.className='heart'; h.textContent=['🌸','🌷','💗','🌹'][i%4];
     h.style.left=Math.random()*100+'vw';
