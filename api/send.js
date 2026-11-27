@@ -7,7 +7,8 @@ const EVENTS = {
     visit: "👀 Сайт открыли",
     gate: "⏰ Таймер дошёл до нуля, показан экран с кодом",
     wrong: "❌ Неверный код",
-    success: "💌 Код верный, письмо открыто!"
+    success: "💌 Код верный, письмо открыто!",
+    late: "🔓 Вечерняя часть письма открылась прямо у неё на экране"
 };
 
 function formatTime() {
@@ -158,3 +159,4 @@ export default async function handler(req, res) {
         });
     }
 }
+
