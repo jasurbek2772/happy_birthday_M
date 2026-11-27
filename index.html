@@ -33,7 +33,14 @@ button{margin-top:16px;padding:13px 32px;font-size:16px;border:0;border-radius:9
 .shake{animation:shake .4s}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .letter{text-align:left}
-.letter h1{text-align:center}
+.letter h1{text-align:center;opacity:0;animation:rise .9s ease forwards}
+.tree-svg{display:block;width:100%;max-width:300px;margin:-8px auto 6px;overflow:visible}
+.br{fill:none;stroke:#6a3b2c;stroke-linecap:round;stroke-dasharray:1 2;stroke-dashoffset:1;animation:grow ease-out forwards}
+@keyframes grow{to{stroke-dashoffset:0}}
+.lf{opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .7s ease-out both}
+@keyframes pop{0%{transform:scale(0);opacity:0}65%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+.gs{opacity:0;animation:fadein 1.2s ease forwards}
+@keyframes fadein{to{opacity:.16}}
 .letter p{font-size:17px;line-height:1.75;opacity:0;animation:rise .9s ease forwards}
 .sign{text-align:right;font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:26px;color:var(--accent)}
 .heart{position:fixed;bottom:-30px;pointer-events:none;animation:float linear forwards}
@@ -54,13 +61,14 @@ button{margin-top:16px;padding:13px 32px;font-size:16px;border:0;border-radius:9
     <div class="emoji">🌹</div>
     <h1>С днём рождения!</h1>
     <p class="muted">Чтобы убедиться, что это ты, введи код из 4 цифр.</p>
-    <div class="hint">Подсказка: сколько книг было в подвале у дяди Амин?<i>Амин амакининг ертуласида нечта китоб бор эди "Бинафша Шуъласи"</i></div>
+    <div class="hint">Подсказка: сколько книг было в подвале у дяди Амин?<i>Амин амакининг ертуласида нечта китоб бор эди</i></div>
     <input id="pin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="Код">
     <div><button id="go">Открыть</button></div>
     <div class="err" id="err"></div>
   </section>
 
   <section id="letter" class="card letter hidden">
+    <div id="tree" aria-hidden="true"></div>
     <h1 id="title"></h1>
     <div id="text"></div>
     <p class="sign" id="sign"></p>
@@ -69,15 +77,15 @@ button{margin-top:16px;padding:13px 32px;font-size:16px;border:0;border-radius:9
 
 <script>
 // ===== НАСТРОЙКИ =====
-var OPEN_AT = Date.parse('2026-11-08T00:00:00+07:00'); // Красноярск, UTC+7
+var OPEN_AT = Date.parse('2026-12-08T00:00:00+07:00'); // Красноярск, UTC+7
 var PIN = '5454';
 var TITLE = '8 чудо света😍, девушка 12 из 10, с днём рождения!';
 var PARAGRAPHS = [
-  'Ассалому алейкум Мардона, С днём рождения!',
-  '',
+  'Здесь будет твоё письмо. Первый абзац.',
+  'Второй абзац с искренними словами.',
   'Третий абзац.'
 ];
-var SIGNATURE = 'Ваш фанат Жасур';
+var SIGNATURE = 'Твой фанат Жасур';
 // ======================
 
 var $ = function(id){return document.getElementById(id)};
@@ -117,7 +125,7 @@ var iv = setInterval(tick,1000); tick();
 notify('visit', visitPhase);
 
 function hearts(){
-  for(var i=0;i<50;i++){
+  for(var i=0;i<24;i++){
     var h = document.createElement('div');
     h.className='heart'; h.textContent=['🌸','🌷','💗','🌹'][i%4];
     h.style.left=Math.random()*100+'vw';
@@ -129,6 +137,49 @@ function hearts(){
   }
 }
 
+var T0 = 5.4; // когда начинает появляться текст письма (сек), после того как дерево выросло
+function buildTree(){
+  var cols=['#e63e78','#f0679a','#f7a3b5','#f9c9a8','#f4d06f','#d9446a'];
+  // ветки: [путь, толщина, задержка, длительность]
+  var br=[
+    ['M150 324C148 296 152 272 150 246',9,0.2,1.2],
+    ['M150 252C146 222 120 206 92 160',6,1.3,1],
+    ['M150 252C154 222 180 206 208 160',6,1.3,1],
+    ['M150 252C150 218 150 190 150 140',5,1.4,1],
+    ['M128 212C112 190 100 150 96 100',3.5,2,0.9],
+    ['M172 212C188 190 200 150 204 100',3.5,2,0.9],
+    ['M96 150C100 120 112 90 118 55',2.5,2.6,0.8],
+    ['M204 150C200 120 188 90 182 55',2.5,2.6,0.8],
+    ['M100 176C80 160 62 140 54 108',2.5,2.6,0.8],
+    ['M200 176C220 160 238 140 246 108',2.5,2.6,0.8],
+    ['M150 196C138 160 130 130 128 92',2.5,2.6,0.8],
+    ['M150 196C162 160 170 130 172 92',2.5,2.6,0.8]
+  ];
+  var s='<svg class="tree-svg" viewBox="0 0 300 335"><defs><path id="hh" d="M0 4C-7-2-7-9-3.2-9C-1.4-9 0-7.8 0-6.4C0-7.8 1.4-9 3.2-9C7-9 7-2 0 4Z"/></defs>';
+  s+='<ellipse class="gs" cx="150" cy="328" rx="72" ry="6" fill="#d9446a"/>';
+  br.forEach(function(b){
+    s+='<path class="br" pathLength="1" d="'+b[0]+'" style="stroke-width:'+b[1]+';animation-delay:'+b[2]+'s;animation-duration:'+b[3]+'s"/>';
+  });
+  // листья-сердечки: случайные точки внутри формы сердца
+  var pts=[],tries=0;
+  while(pts.length<230 && tries<30000){
+    tries++;
+    var px=28+Math.random()*244, py=28+Math.random()*250;
+    var x=(px-150)/105, y=(165-py)/105, a=x*x+y*y-1;
+    if(a*a*a - x*x*y*y*y > 0) continue;
+    var ok=true;
+    for(var i=0;i<pts.length;i++){var dx=pts[i][0]-px,dy=pts[i][1]-py; if(dx*dx+dy*dy<100){ok=false;break}}
+    if(ok) pts.push([px,py]);
+  }
+  pts.forEach(function(q,i){
+    var dl = 2.7 + ((290-q[1])/260)*2.0 + Math.random()*0.5; // снизу вверх
+    var sc = 1.05 + Math.random()*0.7, r = Math.round(Math.random()*50-25);
+    s+='<g transform="translate('+q[0].toFixed(1)+' '+q[1].toFixed(1)+') rotate('+r+') scale('+sc.toFixed(2)+')"><use class="lf" href="#hh" fill="'+cols[i%cols.length]+'" style="animation-delay:'+dl.toFixed(2)+'s"/></g>';
+  });
+  $('tree').innerHTML = s+'</svg>';
+}
+buildTree();
+
 function check(){
   var v = $('pin').value;
   if(v.length<4){return}
@@ -136,11 +187,13 @@ function check(){
     $('title').textContent = TITLE;
     $('text').innerHTML = PARAGRAPHS.map(function(t,i){
       var p = document.createElement('p'); p.textContent = t;
-      p.style.animationDelay = (0.4+i*0.9)+'s'; return p.outerHTML;
+      p.style.animationDelay = (T0+0.4+i*0.9)+'s'; return p.outerHTML;
     }).join('');
     $('sign').textContent = SIGNATURE;
-    $('sign').style.animationDelay = (0.4+PARAGRAPHS.length*0.9)+'s';
-    show('letter'); hearts(); window.scrollTo(0,0);
+    $('sign').style.animationDelay = (T0+0.4+PARAGRAPHS.length*0.9)+'s';
+    $('title').style.animationDelay = (T0-0.6)+'s';
+    show('letter'); window.scrollTo(0,0);
+    setTimeout(hearts, (T0+0.6)*1000);
     notify('success');
   } else {
     $('err').textContent = 'Не тот код. Попробуй ещё раз 🙂';
